@@ -22,7 +22,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
         $intendedRole = $request->input('role');
 
         // Allow admin accounts through either login page.

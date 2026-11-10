@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // to ung parang ipupunta nya sa login dashboard pag nag back sa browser
+        $middleware->web(append: [
+            \App\Http\Middleware\NoCache::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

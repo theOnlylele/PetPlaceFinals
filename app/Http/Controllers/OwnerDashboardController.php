@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use App\Models\Appointment;
 use App\Models\Pet;
 use App\Models\PetOwner;
@@ -15,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+
 
 class OwnerDashboardController extends Controller
 {
@@ -64,7 +66,7 @@ class OwnerDashboardController extends Controller
 
     public function show(): View
 {
-    $user = auth()->user();
+       $user = Auth::user();
 
     $petOwner = PetOwner::where('user_id', $user->id)->firstOrFail();
 
