@@ -199,6 +199,12 @@ Route::middleware(['auth'])->group(function () {
         'appointments'
     ])->name('owner.appointments');
 
+    // OWNER: CHECK VET / GROOMER AVAILABILITY FOR A DATE AND TIME
+    Route::get('/owner/staff-availability', [
+        OwnerDashboardController::class,
+        'staffAvailability'
+    ])->name('owner.staff-availability');
+
     // OWNER VACCINATION RECORDS
     Route::get('/owner/vaccinations', [
         OwnerDashboardController::class,

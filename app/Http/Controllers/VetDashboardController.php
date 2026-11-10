@@ -1186,6 +1186,8 @@ class VetDashboardController extends Controller
             || ! $vet->working_hours_start
             || ! $vet->working_hours_end
         ) {
+            $this->assertNotDoubleBooked($vet, $appointmentAt);
+
             return;
         }
 
@@ -1195,6 +1197,15 @@ class VetDashboardController extends Controller
             || $appointmentAt->format('H:i:s') >= $vet->working_hours_end
         ) {
             abort(422, 'The selected time is outside your saved availability.');
+        }
+
+        $this->assertNotDoubleBooked($vet, $appointmentAt);
+    }
+
+    private function assertNotDoubleBooked(Vet $vet, Carbon $appointmentAt): void
+    {
+        if ($vet->availabilityAt($appointmentAt)['status'] === 'booked') {
+            abort(422, 'You already have a confirmed appointment at that time.');
         }
     }
 }

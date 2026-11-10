@@ -71,6 +71,27 @@
             </select>
         </div>
 
+        {{-- DATE AND TIME --}}
+        <div class="form-group">
+            <label for="appointment_at">Preferred date and time</label>
+            <small style="display:block; color:#81798e; margin-bottom:6px;">Pick a date and time first, then we will show who is available.</small>
+            <input
+                type="datetime-local"
+                name="appointment_at"
+                id="appointment_at"
+                class="form-control"
+                value="{{ old('appointment_at') }}"
+                min="{{ now()->format('Y-m-d\TH:i') }}"
+                required
+            >
+        </div>
+
+        {{-- LIVE AVAILABILITY --}}
+        <div id="availability-panel" class="card" style="background:#faf9ff; margin-bottom:20px;" hidden>
+            <strong id="availability-title" style="display:block; color:#392d54; margin-bottom:10px;"></strong>
+            <div id="availability-list"></div>
+        </div>
+
         {{-- VETERINARIAN --}}
         <div class="form-group" id="vet-field">
             <label for="vet_id">Veterinarian</label>
@@ -272,20 +293,6 @@
             </div>
         </fieldset>
 
-        {{-- DATE AND TIME --}}
-        <div class="form-group">
-            <label for="appointment_at">Preferred date and time</label>
-            <input
-                type="datetime-local"
-                name="appointment_at"
-                id="appointment_at"
-                class="form-control"
-                value="{{ old('appointment_at') }}"
-                min="{{ now()->format('Y-m-d\TH:i') }}"
-                required
-            >
-        </div>
-
         {{-- REASON --}}
         <div class="form-group">
             <label for="reason">
@@ -410,6 +417,92 @@
     if (serviceType) {
         serviceType.addEventListener('change', toggleStaffDropdown);
         toggleStaffDropdown();
+    }
+
+    // ---- Live vet / groomer availability ----
+    const appointmentAt = document.getElementById('appointment_at');
+    const panel = document.getElementById('availability-panel');
+    const panelTitle = document.getElementById('availability-title');
+    const panelList = document.getElementById('availability-list');
+    const availabilityUrl = @json(route('owner.staff-availability'));
+
+    const badgeColors = {
+        available: ['#e6f7ec', '#1f7a3d', 'Available'],
+        booked: ['#fff4e0', '#a86400', 'Booked'],
+        unavailable: ['#fdeaea', '#b3261e', 'Unavailable'],
+    };
+
+    async function refreshAvailability() {
+        if (!appointmentAt || !appointmentAt.value) {
+            panel.hidden = true;
+            return;
+        }
+
+        const params = new URLSearchParams({
+            appointment_at: appointmentAt.value,
+            service_type: serviceType.value,
+        });
+
+        let data;
+        try {
+            const response = await fetch(`${availabilityUrl}?${params}`, {
+                headers: { 'Accept': 'application/json' },
+            });
+            if (!response.ok) throw new Error('lookup failed');
+            data = await response.json();
+        } catch (error) {
+            panel.hidden = true;
+            return;
+        }
+
+        const isGrooming = serviceType.value === 'Grooming';
+        const select = isGrooming ? groomerSelect : vetSelect;
+        const label = isGrooming ? 'groomers' : 'veterinarians';
+
+        panelTitle.textContent = data.staff.length === 0
+            ? `No ${label} found.`
+            : `${data.available_count} of ${data.staff.length} ${label} available on ${data.when}`;
+
+        panelList.innerHTML = '';
+        data.staff.forEach(member => {
+            const [bg, fg, text] = badgeColors[member.status];
+
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid #eeeaf5;';
+
+            const name = document.createElement('span');
+            name.style.color = '#392d54';
+            name.textContent = member.name;
+
+            const badge = document.createElement('span');
+            badge.style.cssText = `background:${bg}; color:${fg}; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700; text-align:right;`;
+            badge.textContent = member.status === 'available' ? text : `${text}: ${member.message}`;
+
+            row.append(name, badge);
+            panelList.appendChild(row);
+
+            // Mirror the status inside the dropdown and block unavailable choices
+            const option = select.querySelector(`option[value="${member.id}"]`);
+            if (option) {
+                option.textContent = member.status === 'available'
+                    ? `${member.name} - Available`
+                    : `${member.name} - ${text}`;
+                option.disabled = member.status !== 'available';
+            }
+        });
+
+        // Clear a selection that just became unavailable
+        if (select.selectedOptions[0] && select.selectedOptions[0].disabled) {
+            select.value = '';
+        }
+
+        panel.hidden = false;
+    }
+
+    if (appointmentAt) {
+        appointmentAt.addEventListener('change', refreshAvailability);
+        serviceType.addEventListener('change', refreshAvailability);
+        refreshAvailability();
     }
 
     const fvrcpCombo = document.getElementById('vaccine-cat_fvrcp');

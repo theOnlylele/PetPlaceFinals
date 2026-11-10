@@ -9,6 +9,7 @@ use App\Models\PetOwner;
 use App\Models\Vet;
 use App\Models\VaccinationRecord;
 use App\Models\Vaccine;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -757,19 +758,22 @@ $groomers = Vet::where('staff_type', 'groomer')
             $selectedVaccines = [];
         }
 
-        if (
-            $validated['service_type'] !== 'Grooming'
-            && ! empty($validated['vet_id'])
-        ) {
-            $selectedVet = Vet::findOrFail($validated['vet_id']);
+        $isGrooming = $validated['service_type'] === 'Grooming';
+        $chosenStaffId = $isGrooming
+            ? ($validated['groomer_id'] ?? null)
+            : ($validated['vet_id'] ?? null);
 
-            if (! $this->isWithinVetAvailability(
-                $selectedVet,
+        if ($chosenStaffId) {
+            $availability = Vet::findOrFail($chosenStaffId)->availabilityAt(
                 Carbon::parse($validated['appointment_at'])
-            )) {
+            );
+
+            if ($availability['status'] !== 'available') {
                 throw ValidationException::withMessages([
-                    'appointment_at' =>
-                        'The selected veterinarian is not available at that date and time.',
+                    'appointment_at' => 'The selected '
+                        . ($isGrooming ? 'groomer' : 'veterinarian')
+                        . ' is not available at that date and time ('
+                        . $availability['message'] . ').',
                 ]);
             }
         }
@@ -821,6 +825,46 @@ $groomers = Vet::where('staff_type', 'groomer')
 
     /*
     |--------------------------------------------------------------------------
+    | STAFF AVAILABILITY LOOKUP (JSON)
+    |--------------------------------------------------------------------------
+    */
+
+    public function staffAvailability(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->isOwner(), 403);
+
+        $validated = $request->validate([
+            'appointment_at' => ['required', 'date'],
+            'service_type' => [
+                'required',
+                Rule::in(['Check-up / Consultation', 'Vaccination', 'Grooming']),
+            ],
+        ]);
+
+        $at = Carbon::parse($validated['appointment_at']);
+
+        $staff = Vet::where(
+            'staff_type',
+            $validated['service_type'] === 'Grooming' ? 'groomer' : 'veterinarian'
+        )
+            ->where('approval_status', 'approved')
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get()
+            ->map(fn (Vet $member) => [
+                'id' => $member->id,
+                'name' => trim($member->first_name . ' ' . $member->last_name),
+            ] + $member->availabilityAt($at));
+
+        return response()->json([
+            'when' => $at->format('F d, Y \a\t h:i A'),
+            'available_count' => $staff->where('status', 'available')->count(),
+            'staff' => $staff->values(),
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | GROOMING VALIDATION
     |--------------------------------------------------------------------------
     */
@@ -830,40 +874,5 @@ $groomers = Vet::where('staff_type', 'groomer')
         return $request->input('service_type') === 'Grooming'
             ? ['nullable', Rule::in($choices)]
             : ['prohibited'];
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | VETERINARIAN AVAILABILITY
-    |--------------------------------------------------------------------------
-    */
-
-    private function isWithinVetAvailability(
-        Vet $vet,
-        Carbon $appointmentAt
-    ): bool {
-        if (in_array(
-            $appointmentAt->toDateString(),
-            $vet->days_off ?? [],
-            true
-        )) {
-            return false;
-        }
-
-        if (
-            empty($vet->working_days)
-            || ! $vet->working_hours_start
-            || ! $vet->working_hours_end
-        ) {
-            return true;
-        }
-
-        return in_array(
-            $appointmentAt->format('l'),
-            $vet->working_days,
-            true
-        )
-            && $appointmentAt->format('H:i:s') >= $vet->working_hours_start
-            && $appointmentAt->format('H:i:s') < $vet->working_hours_end;
     }
 }
