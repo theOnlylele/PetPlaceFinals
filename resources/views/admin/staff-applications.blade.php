@@ -1,4 +1,3 @@
-```blade
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,32 +18,10 @@
             color: #263445;
         }
 
-        .sidebar {
-            position: fixed;
-            width: 240px;
-            height: 100vh;
-            background: #173b35;
-            color: white;
-            padding: 30px 20px;
-        }
-
-        .sidebar h2 {
-            margin-bottom: 35px;
-        }
-
-        .sidebar a {
-            display: block;
-            color: white;
-            text-decoration: none;
-            padding: 14px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            background: #28564b;
-        }
+       .sidebar { position: fixed; width: 240px; height: 100vh; background: #173b35; color: white; padding: 30px 20px; }
+        .sidebar h2 { margin-bottom: 40px; }
+        .sidebar a { display: block; padding: 14px; margin-top: 15px; background: #28564b; border-radius: 8px; color: white; text-decoration: none; }
+        .sidebar a:hover { background: #397261; }
 
         .main {
             margin-left: 240px;
@@ -79,13 +56,32 @@
         }
 
         button {
+            padding: 11px 16px;
+            margin-top: 14px;
             border: none;
-            padding: 10px 18px;
-            border-radius: 6px;
+            border-radius: 7px;
+            background: #ffffffff;
+            color: black;
+            font-size: 14px;
+            font-weight: bold;
             cursor: pointer;
-            color: white;
+            transition: background 0.2s;
         }
 
+                button:hover {
+            background: #12563e;
+        }
+
+        .toggle-button {
+            margin-top: 0;
+            background: #e8f5ee;
+            color: #176b4d;
+        }
+
+        .toggle-button:hover {
+            background: #d2ebdd;
+        }
+        
         .approve {
             background: #198754;
         }
@@ -115,6 +111,10 @@
             padding: 30px;
             border-radius: 12px;
         }
+
+
+        .logout { margin-top: 40px; }
+        .logout button { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 
@@ -125,6 +125,13 @@
 
     <a href="{{ route('admin.dashboard') }}">Admin Dashboard</a>
     <a href="{{ route('admin.staff-applications') }}" class="active">Staff Applications</a>
+    <a href="{{ route('admin.vaccines') }}">Manage Vaccines</a>
+
+     <form class="logout" method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit">Log Out</button>
+        </form>
+    
 </aside>
 
 <main class="main">

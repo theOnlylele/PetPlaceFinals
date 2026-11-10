@@ -61,11 +61,8 @@ Route::middleware(['auth'])->group(function () {
     ])->name('profile.destroy');
 
     // ADMIN DASHBOARD
-    Route::get('/admin/dashboard', function () {
-        abort_unless(auth()->user()->isAdmin(), 403);
-
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+   Route::get('/admin/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])
+       ->name('admin.dashboard');
 
     // ADMIN VACCINE MANAGEMENT
     Route::get('/admin/vaccines', [VaccineController::class, 'index'])->name('admin.vaccines');
