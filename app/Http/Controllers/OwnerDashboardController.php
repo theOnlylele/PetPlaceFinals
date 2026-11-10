@@ -167,15 +167,17 @@ public function appointments(Request $request): View|RedirectResponse
 
     $vaccinationData = $this->getVaccinationData($pet);
 
-    $vets = Vet::where('staff_type', 'veterinarian')
-        ->orderBy('first_name')
-        ->orderBy('last_name')
-        ->get();
+   $vets = Vet::where('staff_type', 'veterinarian')
+    ->where('approval_status', 'approved')
+    ->orderBy('first_name')
+    ->orderBy('last_name')
+    ->get();
 
-    $groomers = Vet::where('staff_type', 'groomer')
-        ->orderBy('first_name')
-        ->orderBy('last_name')
-        ->get();
+$groomers = Vet::where('staff_type', 'groomer')
+    ->where('approval_status', 'approved')
+    ->orderBy('first_name')
+    ->orderBy('last_name')
+    ->get();
 
     $appointments = Appointment::with(['vet', 'groomer', 'pet'])
         ->where('pet_owner_id', $petOwner->id)
@@ -626,16 +628,18 @@ public function appointments(Request $request): View|RedirectResponse
             ],
 
             'vet_id' => [
-                'nullable',
-                Rule::exists('vets', 'id')
-                    ->where('staff_type', 'veterinarian'),
-            ],
+    'nullable',
+    Rule::exists('vets', 'id')
+        ->where('staff_type', 'veterinarian')
+        ->where('approval_status', 'approved'),
+],
 
-            'groomer_id' => [
-                'nullable',
-                Rule::exists('vets', 'id')
-                    ->where('staff_type', 'groomer'),
-            ],
+'groomer_id' => [
+    'nullable',
+    Rule::exists('vets', 'id')
+        ->where('staff_type', 'groomer')
+        ->where('approval_status', 'approved'),
+],
 
             'appointment_at' => [
                 'required',
