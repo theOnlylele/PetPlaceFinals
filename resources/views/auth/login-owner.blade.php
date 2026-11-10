@@ -192,10 +192,6 @@ input[type="password"] {
       </div>
 
       <div class="remember-row">
-        <label>
-          <input type="checkbox" name="remember"/>
-          Remember me
-        </label>
         @if (Route::has('password.request'))
           <a href="{{ route('password.request') }}">Forgot password?</a>
         @endif

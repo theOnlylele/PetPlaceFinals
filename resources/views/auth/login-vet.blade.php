@@ -132,7 +132,7 @@ input[type="password"] {
     background: #faf8ff;
     border: 1.5px solid var(--border);
     border-radius: 10px;
-    padding: 11px 44px 11px 14px !important;git add .
+    padding: 11px 44px 11px 14px !important;
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
@@ -193,10 +193,7 @@ input[type="password"] {
       </div>
 
       <div class="remember-row">
-        <label>
-          <input type="checkbox" name="remember"/>
-          Remember me
-        </label>
+      
         @if (Route::has('password.request'))
           <a href="{{ route('password.request') }}">Forgot password?</a>
         @endif
